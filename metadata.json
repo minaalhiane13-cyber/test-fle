@@ -1,0 +1,5 @@
+{
+  "name": "LECTIA",
+  "description": "Une application pédagogique intelligente pour améliorer la compréhension de l'écrit des élèves marocains (Primaire, Collège, Lycée) avec feedback en temps réel via l'IA.",
+  "requestFramePermissions": []
+}

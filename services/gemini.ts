@@ -33,16 +33,16 @@ async function fetchWithRetry(fn: () => Promise<any>, maxRetries = 3): Promise<a
 const getSystemInstruction = (grade: StudentGrade) => {
   const common = `INTERDIT : N'utilise JAMAIS les mots suivants : champion, aventure, aventurier, prince, trésor, défi. Ne parle pas de quête ou de récompense magique. 
   Tu dois impérativement t'adresser à l'élève en utilisant le 'Tu'. 
-  Dans tes feedbacks, insiste toujours sur la ponctuation (majuscule au début, point à la fin) et sur la clarté de la structure de phrase. 
+  Dans tes feedbacks, insiste toujours sur la ponctuation (majuscule au début, point à la fin) et sur la clarté, l'orthographe et la structure de phrase. 
   Reste dans un registre réaliste, quotidien et pédagogique.`;
   
   if (['CP', 'CE1', 'CE2', 'CM1', 'CM2', '6AEP'].includes(grade)) {
-    return `Tu es un professeur de FLE bienveillant pour le primaire au Maroc. Ton langage est simple, imagé et encourageant. ${common}`;
+    return `Tu es un professeur de FLE bienveillant pour le primaire au Maroc. Ton langage est simple, sérieux, poli et encourageant. ${common}`;
   }
   if (['1AC', '2AC', '3AC'].includes(grade)) {
-    return `Tu es un professeur de FLE pour le collège au Maroc. Ton langage est clair, structuré et pédagogique. ${common}`;
+    return `Tu es un professeur de FLE pour le collège au Maroc. Ton langage est clair, structuré; sérieux et pédagogique. ${common}`;
   }
-  return `Tu es un professeur de FLE pour le lycée au Maroc. Ton langage est analytique, précis et académique. ${common}`;
+  return `Tu es un professeur de FLE pour le lycée au Maroc. Ton langage est analytique, précis, sérieux, structuré et pédagogique. ${common}`;
 };
 
 function cleanJSON(text: string): string {
@@ -59,7 +59,7 @@ export async function generateDiagnostic(grade: StudentGrade) {
     const ai = getAI();
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Génère 5 questions de diagnostic de lecture pour un élève de niveau ${grade} au Maroc. 
+      contents: `Génère 5 questions de diagnostic de lecture pour un élève de niveau ${grade} au Maroc. Si ${grade} est CP, CE1, CE2, CM1, CM2, 6AEP poser des questions faciles. Si ${grade} est 1AC, 2AC ou 3AC poser des questions de difficulté moyenne adaptée au cycle collégial, si ${grade} est TC, 1BAC ou 2BAC poser des questions adaptées au cycle lycéen.   . 
       Chaque question doit être un objet JSON avec: id, question, options (4 choix), correctIndex (0-3), et skill (repérage, inférence ou vocabulaire).
       Format: JSON array. Évite le vocabulaire de fantaisie.`,
       config: {
@@ -91,9 +91,9 @@ export async function generateReadingSession(grade: StudentGrade, result: Diagno
   return fetchWithRetry(async () => {
     const ai = getAI();
     const prompt = `En tant qu'expert FLE du programme marocain, crée une séance de lecture pour un élève de ${grade} ayant un niveau de compréhension ${result}.
-    Sujet: école, famille, environnement ou citoyenneté. 
+    Sujet: école, famille, environnement, animaux, valeurs humaines ou citoyenneté. 
     Organise le texte en paragraphes clairs séparés par des sauts de ligne (\\n\\n).
-    Génère EXACTEMENT 3 questions : 1 littérale, 1 inférentielle, 1 évaluative.
+    Génère EXACTEMENT 3 questions : 1 littérale, 1 inférentielle, 1 évaluative, tu peux les mélanger.
     Pour chaque question, inclus une "sampleCorrectAnswer" qui sert de modèle de réponse idéale avec majuscule et point.
     INTERDIT: champion, aventure, aventurier, prince, trésor, défi.
     Format JSON exact requis.`;
@@ -170,8 +170,8 @@ export async function getFeedback(
     Analyse la réponse de l'élève. 
     S'adresser à lui avec "Tu". 
     Vérifie s'il y a une majuscule au début et un point à la fin.
-    Évalue la structure et la clarté de sa phrase. 
-    Donne un feedback sans utiliser : trésor, défi, champion.`;
+    Évalue la structure, l'orthographe des mots et la clarté de sa phrase. 
+    Donne un feedback sans utiliser : trésor, défi, champion, aventure.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",

@@ -57,12 +57,38 @@ function cleanJSON(text: string): string {
 export async function generateDiagnostic(grade: StudentGrade) {
   return fetchWithRetry(async () => {
     const ai = getAI();
+
+    const simpleLevels = ['CP', 'CE1', 'CE2'].includes(grade);
+
+    const prompt = simpleLevels
+      ? `Génère 5 questions simples de diagnostic de lecture pour un élève de ${grade} au Maroc.
+         Chaque question doit être un objet JSON avec :
+         id, question, options (4 choix), correctIndex (0-3), et skill (repérage, inférence ou vocabulaire).
+         Format: JSON array.`
+      : `Crée EXACTEMENT 5 questions de compréhension adaptées à un élève de ${grade} au Maroc.
+         
+         IMPORTANT :
+         - 2 questions doivent être littérales
+         - 2 questions doivent être inférentielles
+         - 1 question doit être évaluative
+         - Mélange-les dans l'ordre final
+         
+         L'élève devra identifier le type de chaque question.
+         
+         Pour chaque question :
+         - "question" = texte de la question
+         - "options" = ["littérale", "inférentielle", "évaluative"]
+         - "correctIndex" = index correct selon le type réel
+         - "skill" = le type réel (littérale, inférentielle ou évaluative)
+         
+         Format JSON exact requis : tableau d’objets.
+         N’ajoute aucun texte hors JSON.`;
+
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: `Génère 5 questions de diagnostic de lecture pour un élève de niveau ${grade} au Maroc. Si ${grade} est CP, CE1, CE2, CM1, CM2, 6AEP poser des questions faciles. Si ${grade} est 1AC, 2AC ou 3AC poser des questions de difficulté moyenne adaptée au cycle collégial, si ${grade} est TC, 1BAC ou 2BAC poser des questions adaptées au cycle lycéen.   . 
-      Chaque question doit être un objet JSON avec: id, question, options (4 choix), correctIndex (0-3), et skill (repérage, inférence ou vocabulaire).
-      Format: JSON array. Évite le vocabulaire de fantaisie.`,
+      contents: prompt,
       config: {
+        systemInstruction: getSystemInstruction(grade),
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.ARRAY,
@@ -71,18 +97,25 @@ export async function generateDiagnostic(grade: StudentGrade) {
             properties: {
               id: { type: Type.NUMBER },
               question: { type: Type.STRING },
-              options: { type: Type.ARRAY, items: { type: Type.STRING } },
+              options: { 
+                type: Type.ARRAY, 
+                items: { type: Type.STRING } 
+              },
               correctIndex: { type: Type.NUMBER },
-              skill: { type: Type.STRING }
+              skill: { 
+                type: Type.STRING, 
+                enum: ["littérale", "inférentielle", "évaluative"] 
+              }
             },
             required: ["id", "question", "options", "correctIndex", "skill"]
           }
         }
       }
     });
-    
+
     const text = response.text;
     if (!text) throw new Error("L'API Gemini n'a pas renvoyé de texte.");
+
     return JSON.parse(cleanJSON(text));
   });
 }
